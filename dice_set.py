@@ -26,11 +26,14 @@ class DiceSet:
 
     return self._dice
 
+  # reset num_rolls to 0 and all dice to None
   def reset(self):
 
     self._dice = [None for i in xrange(self._num_dice)]
     self._num_rolls = 0
 
+  # Roll all dice at the indices specified and increment our num_rolls count. 
+  # If no indices are specified re-roll all dice.
   def roll(self, indices=None):
 
     if indices is None:
