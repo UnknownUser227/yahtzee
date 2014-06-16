@@ -6,6 +6,8 @@ import random
 import ys
 import ya
 
+# Class representing a Yahtzee player. Subclasses should implement the
+# get_action method
 class Player:
 
   def __init__(self, name):
@@ -26,7 +28,7 @@ class HumanPlayer(Player):
       if action_type == 'R':
         indices = raw_input('Which dice would you like to re-roll? ')
         try:
-          indices = map(int, indices.split(' '))
+          indices = [int(i) - 1 for i in indices.split(' ')]
           return ya.Roll(indices)
         except ValueError as e:
           print "Expected dice to be listed as space-separated dice indices"
@@ -99,7 +101,7 @@ class Game:
           assert self._dice.num_rolls() < 3, "Can only roll three times"
           self._dice.roll(player_action.indices())
           print "{} re-rolled dice {} : {}".format(player.name,
-                                                   player_action.indices(),
+                                                   [i + 1 for i in player_action.indices()],
                                                    self._dice)
         elif isinstance(player_action, ya.RecordScore):
           self.score_turn(scoreSheet, player_action.score())

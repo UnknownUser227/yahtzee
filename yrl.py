@@ -6,9 +6,14 @@ import random
 import rl
 import ys
 import ya
-import yahtzee
 
-def to_bits(n, minLen=0, base=2, offset=0):
+''' Assorted functions to be used with the rl module to train a computer to
+play yahtzee
+'''
+
+# Returns a representation of n as a list of digits with base base and min
+# number of digits minLen
+def ToBits(n, minLen=0, base=2, offset=0):
 
   bits = []
   while 0 < n or len(bits) < minLen:
@@ -17,13 +22,15 @@ def to_bits(n, minLen=0, base=2, offset=0):
 
   return bits
 
-def enum_sorted_poss(min, max, dims):
+# Returns a map of all possible sorted dims-tuples with elements between min
+# and max and their probability of being drawn at random
+def EnumSortedPoss(min, max, dims):
 
   base = max - min + 1
   num_poss = (base)**dims
   sorted_count_map = {}
   for i in xrange(num_poss):
-    poss = tuple(sorted(to_bits(i, minLen=dims, base=base, offset=min)))
+    poss = tuple(sorted(ToBits(i, minLen=dims, base=base, offset=min)))
     if poss in sorted_count_map:
       sorted_count_map[poss] += 1
     else:
@@ -41,27 +48,31 @@ kRollsIndex = 14
 kDiceIndex = 15
 rolled_prob = [
   {},
-  enum_sorted_poss(1, 6, 1),
-  enum_sorted_poss(1, 6, 2),
-  enum_sorted_poss(1, 6, 3),
-  enum_sorted_poss(1, 6, 4),
-  enum_sorted_poss(1, 6, 5)
+  EnumSortedPoss(1, 6, 1),
+  EnumSortedPoss(1, 6, 2),
+  EnumSortedPoss(1, 6, 3),
+  EnumSortedPoss(1, 6, 4),
+  EnumSortedPoss(1, 6, 5)
 ]
 
-def state_tuple(i, y, r, d1, d2, d3, d4, d5):
+# Helper function for generating state-keys
+def StateTuple(i, y, r, d1, d2, d3, d4, d5):
 
-  i_bits = to_bits(i, 13)
+  i_bits = ToBits(i, 13)
   return (i_bits[0], i_bits[1], i_bits[2], i_bits[3], i_bits[4], i_bits[5], i_bits[6], 
           i_bits[7], i_bits[8], i_bits[9], i_bits[10], i_bits[11], i_bits[12], y, r, 
           d1, d2, d3, d4, d5)
 
-def initialize_state_values(numScored=None, numRolls=None):
+# Returns a map of all state-values corresponding to having scored numScored
+# types already and used numRolls re-rolls this turn with their initial value
+# (0)
+def InitializeStateValues(numScored=None, numRolls=None):
 
   num = 0
   state_values = {}
   for i in xrange(2**13 - 1):
     # Every combination of score types
-    if numScored is not None and sum(to_bits(i, 13)) != numScored:
+    if numScored is not None and sum(ToBits(i, 13)) != numScored:
       continue
     for r in xrange(3):
       if numRolls is not None and numRolls != r:
@@ -74,19 +85,20 @@ def initialize_state_values(numScored=None, numRolls=None):
               for d5 in xrange(d4, 7):
                 if num % 100000 == 0:
                   print num
-                state_values[state_tuple(i, 0, r, d1, d2, d3, d4, d5)] = 0
+                state_values[StateTuple(i, 0, r, d1, d2, d3, d4, d5)] = 0
                 num += 1
-                if to_bits(i, 13)[kYahtzeeUsedIndex] == 1:
-                  state_values[state_tuple(i, 1, r, d1, d2, d3, d4, d5)] = 0
+                if ToBits(i, 13)[kYahtzeeUsedIndex] == 1:
+                  state_values[StateTuple(i, 1, r, d1, d2, d3, d4, d5)] = 0
                   num += 1
 
   return state_values
 
-def roll_list():
+
+def RollList():
 
   rolls = []
   for i in xrange(1, 2**5):
-    bits = to_bits(i, 5)
+    bits = ToBits(i, 5)
     roll = []
     for j in range(len(bits)):
       if bits[j] == 1:
@@ -94,9 +106,11 @@ def roll_list():
     rolls.append(roll)
   return rolls
 
-rolls = roll_list()
+# All possible five-dice rolls
+rolls = RollList()
 
-def state_actions(state):
+# Returns a list of all Actions that can be taken from the given state
+def StateActions(state):
 
   actions = []
   for i in xrange(kYahtzeeScoredIndex):
@@ -115,6 +129,7 @@ def state_actions(state):
 
   return actions
 
+# Returns the reward for taking the passed action in the passed state
 def reward_func(state, action):
 
   if isinstance(action, ya.Roll):
@@ -125,11 +140,14 @@ def reward_func(state, action):
                                state[kYahtzeeScoredIndex])
     return sheet.record_score(action.score(), dice)
 
+# Returns a map of (state, probability of entering state) pairs when the passed
+# action is taken in the passed state
 def trans_func(state, action):
 
   new_states = []
   state_list = list(state)
   if isinstance(action, ya.Roll):
+    # Generate list of all possible next states when re-rolling dice
     num_rolled = len(action.indices())
     dice = [state[kDiceIndex + i] for i in xrange(5) if i not in
             action.indices()]
@@ -141,6 +159,7 @@ def trans_func(state, action):
         state_list[kDiceIndex + i] = all_dice[i]
       new_states.append((tuple(state_list), new_dice_prob[new_dice]))
   else:
+    # Generate list of all possible next states when scoring a category
     dice = dice_set.DiceSet(5, dice=list(state[kDiceIndex:]))
     sheet = ys.ScoreSheet(state[:kYahtzeeScoredIndex],
                                state[kYahtzeeScoredIndex])
@@ -159,52 +178,33 @@ def trans_func(state, action):
   
   return new_states
 
-def train_comp_player():
+# Generates optimal value functions for yahtzee
+def TrainCompPlayer():
 
   for num_scored in range(12, -1, -1):
     for num_rolls in range(2, -1, -1):
       print "Finding moves when we have scored {} boxes and re-rolled {} times".format(num_scored, num_rolls)
-      state_values = initialize_state_values(numScored=num_scored, numRolls=num_rolls)
+      state_values = InitializeStateValues(numScored=num_scored, numRolls=num_rolls)
       next_state_values = pickle.load(open('yahtzee_{}_0'.format(num_scored+1)))
       for i in range(num_rolls + 1, 3):
         next_state_values.update(pickle.load(open('yahtzee_{}_{}'.format(num_scored, i), 'rt')))
-      rl.ValueIteration(state_values, state_actions, reward_func, trans_func, .98,
+      rl.ValueIteration(state_values, StateActions, reward_func, trans_func, .98,
                         nextStateValues=next_state_values,
                         outputName='yahtzee_{}_{}'.format(num_scored, num_rolls))
       del state_values
       del next_state_values
 
-def train_comp_player_policy():
+# Generates optimal player policy from optimal value functions
+def TrainCompPlayerPolicy():
 
   for num_scored in range(12, -1, -1):
     for num_rolls in range(2, -1, -1):
       print "Finding policy when we have scored {} boxes and re-rolled {} times".format(num_scored, num_rolls)
-      state_values = initialize_state_values(numScored=num_scored, numRolls=num_rolls)
+      state_values = InitializeStateValues(numScored=num_scored, numRolls=num_rolls)
       next_state_values = pickle.load(open('yahtzee_{}_0'.format(num_scored+1)))
       for i in range(num_rolls + 1, 3):
         next_state_values.update(pickle.load(open('yahtzee_{}_{}'.format(num_scored, i), 'rt')))
-      rl.SolveForPolicy(state_values.keys(), next_state_values, state_actions, reward_func, trans_func, .98,
+      rl.SolveForPolicy(state_values.keys(), next_state_values, StateActions, reward_func, trans_func, .98,
                         outputName='yahtzee_{}_{}_policy'.format(num_scored, num_rolls))
       del state_values
       del next_state_values
-
-def convert_action(action):
-
-  if isinstance(action, yahtzee.Roll):
-    return ya.Roll(action.indices())
-  else:
-    return ya.RecordScore(action.score())
-
-def convert_comp_player_policy():
-  for num_scored in range(12, -1, -1):
-    for num_rolls in range(2, -1, -1):
-      print "Converting policy when we have scored {} boxes and re-rolled {} times".format(num_scored, num_rolls)
-      policy_file = open('yahtzee_{}_{}_policy'.format(num_scored, num_rolls))
-      policy = pickle.load(policy_file)
-      policy_file.close()
-      new_policy = {state : convert_action(action) for (state, action) in
-                    policy.iteritems()}
-      pickle.dump(new_policy, open('yahtzee_policy_{}_{}'.format(num_scored, num_rolls), 'wt'))
-      del policy
-      del new_policy
-
