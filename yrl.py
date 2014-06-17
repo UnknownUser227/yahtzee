@@ -181,6 +181,9 @@ def trans_func(state, action):
 # Generates optimal value functions for yahtzee
 def train_comp_player():
 
+  pickle.dump({state_tuple(2**13 - 1, 0, 0, 0, 0, 0, 0, 0) : 0},
+              open('yahtzee_13_0', 'wt'))
+
   for num_scored in range(12, -1, -1):
     for num_rolls in range(2, -1, -1):
       print "Finding moves when we have scored {} boxes and re-rolled {} times".format(num_scored, num_rolls)
@@ -188,7 +191,7 @@ def train_comp_player():
       next_state_values = pickle.load(open('yahtzee_{}_0'.format(num_scored+1)))
       for i in range(num_rolls + 1, 3):
         next_state_values.update(pickle.load(open('yahtzee_{}_{}'.format(num_scored, i), 'rt')))
-      rl.ValueIteration(state_values, StateActions, reward_func, trans_func, 1.0,
+      rl.value_iteration(state_values, StateActions, reward_func, trans_func, 1.0,
                         nextStateValues=next_state_values,
                         outputName='yahtzee_{}_{}'.format(num_scored, num_rolls))
       del state_values
@@ -204,7 +207,7 @@ def train_comp_player_policy():
       next_state_values = pickle.load(open('yahtzee_{}_0'.format(num_scored+1)))
       for i in range(num_rolls + 1, 3):
         next_state_values.update(pickle.load(open('yahtzee_{}_{}'.format(num_scored, i), 'rt')))
-      rl.SolveForPolicy(state_values.keys(), next_state_values, StateActions,
+      rl.solve_for_policy(state_values.keys(), next_state_values, StateActions,
                         reward_func, trans_func, 1.0,
                         outputName='yahtzee_{}_{}_policy'.format(num_scored, num_rolls))
       del state_values

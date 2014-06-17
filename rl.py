@@ -20,11 +20,11 @@ def state_value(nextStateValues, state, actions, rewardFunc, transFunc, gamma):
   best_state_action_value = state_action_value(nextStateValues, state, best_action, rewardFunc,
                                              transFunc, gamma)
   for action in actions[1:]:
-    state_action_value = state_action_value(nextStateValues, state, action, rewardFunc, transFunc,
+    sa_val = state_action_value(nextStateValues, state, action, rewardFunc, transFunc,
                                           gamma)
-    if best_state_action_value < state_action_value:
+    if best_state_action_value < sa_val:
       best_action = action
-      best_state_action_value = state_action_value
+      best_state_action_value = sa_val
 
   return best_state_action_value
 
