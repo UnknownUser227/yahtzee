@@ -188,7 +188,7 @@ def TrainCompPlayer():
       next_state_values = pickle.load(open('yahtzee_{}_0'.format(num_scored+1)))
       for i in range(num_rolls + 1, 3):
         next_state_values.update(pickle.load(open('yahtzee_{}_{}'.format(num_scored, i), 'rt')))
-      rl.ValueIteration(state_values, StateActions, reward_func, trans_func, .98,
+      rl.ValueIteration(state_values, StateActions, reward_func, trans_func, 1.0,
                         nextStateValues=next_state_values,
                         outputName='yahtzee_{}_{}'.format(num_scored, num_rolls))
       del state_values
@@ -204,7 +204,8 @@ def TrainCompPlayerPolicy():
       next_state_values = pickle.load(open('yahtzee_{}_0'.format(num_scored+1)))
       for i in range(num_rolls + 1, 3):
         next_state_values.update(pickle.load(open('yahtzee_{}_{}'.format(num_scored, i), 'rt')))
-      rl.SolveForPolicy(state_values.keys(), next_state_values, StateActions, reward_func, trans_func, .98,
+      rl.SolveForPolicy(state_values.keys(), next_state_values, StateActions,
+                        reward_func, trans_func, 1.0,
                         outputName='yahtzee_{}_{}_policy'.format(num_scored, num_rolls))
       del state_values
       del next_state_values

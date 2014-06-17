@@ -1,1 +1,2 @@
-Python implementation of game of Yahtzee with a rudimentary computer AI
+Python implementation of game of Yahtzee with a rudimentary system for training
+a computer AI using reinforcement learning
