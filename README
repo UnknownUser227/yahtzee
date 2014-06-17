@@ -1,2 +1,12 @@
 Python implementation of game of Yahtzee with a rudimentary system for training
-a computer AI using reinforcement learning
+a computer AI using reinforcement learning. A game can be run by executing the
+yg at the command line. A computer can be trained by editing and running the
+train* methods in yrl, although these are currently slow and generate
+relatively large files. Files:
+
+  dice_set : Representation of a set of dice
+  rl : Basic reinforcement learning functions
+  ys : How to score dice in Yahtzee and track scoring in a game
+  ya : Actions that a player can take in Yahtzee
+  yrl : Functions for running reinforcement learning for Yahtzee
+  yg : For running game of Yahtzee
