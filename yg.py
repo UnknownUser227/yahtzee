@@ -26,7 +26,7 @@ class HumanPlayer(Player):
     while True:
       action_type = raw_input('Would you like to (R)oll or record a (S)core: ')
       if action_type == 'R':
-        indices = raw_input('Which dice would you like to re-roll? ')
+        indices = raw_input('Which dice would you like to re-roll? Enter as space-separated dice indices (from 1 to 5)')
         try:
           indices = [int(i) - 1 for i in indices.split(' ')]
           return ya.Roll(indices)
@@ -40,13 +40,23 @@ class HumanPlayer(Player):
 
 class ComputerPlayer(Player):
 
+  def __init__(self, name, dataDir):
+
+    Player.__init__(self, name)
+    if dataDir == '':
+      self._data_dir = '.'
+    elif dataDir[-1] == '/':
+      self._data_dir = dataDir[:-1]
+    else:
+      self._data_dir = dataDir
+
   def get_action(self, scoreSheet, dice):
 
     print dice
     scored_list = scoreSheet.scored_list()
     num_scored = sum(scored_list)
     num_rolls = dice.num_rolls() - 1
-    policy_file = open('yahtzee_policy_{}_{}'.format(num_scored, num_rolls),
+    policy_file = open('{}/yahtzee_policy_{}_{}'.format(self._data_dir, num_scored, num_rolls),
                        'rt')
     policy = pickle.load(policy_file)
     policy_file.close()
@@ -73,7 +83,8 @@ class Game:
         self._game_state.append((HumanPlayer(raw_input("Player name: ")),
                                 ys.ScoreSheet()))
       elif player_type == 'C':
-        self._game_state.append((ComputerPlayer(raw_input("Player name: ")),
+        data_dir = raw_input("Where are the policy files located? ")
+        self._game_state.append((ComputerPlayer(raw_input("Player name: "), dataDir=data_dir),
                                 ys.ScoreSheet()))
     self._dice = DiceSet(5)
 

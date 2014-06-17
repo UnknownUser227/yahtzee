@@ -2,7 +2,7 @@
 
 import pickle
 
-def StateActionValue(nextStateValues, state, action, rewardFunc, transFunc, gamma):
+def state_action_value(nextStateValues, state, action, rewardFunc, transFunc, gamma):
 
   state_action_value = rewardFunc(state, action)
   new_states_dist = transFunc(state, action)
@@ -10,17 +10,17 @@ def StateActionValue(nextStateValues, state, action, rewardFunc, transFunc, gamm
     state_action_value += gamma*p*nextStateValues[new_state]
   return state_action_value
 
-def StateValue(nextStateValues, state, actions, rewardFunc, transFunc, gamma):
+def state_value(nextStateValues, state, actions, rewardFunc, transFunc, gamma):
 
   assert isinstance(actions, list)
   if len(actions) == 0:
     return 0
 
   best_action = actions[0]
-  best_state_action_value = StateActionValue(nextStateValues, state, best_action, rewardFunc,
+  best_state_action_value = state_action_value(nextStateValues, state, best_action, rewardFunc,
                                              transFunc, gamma)
   for action in actions[1:]:
-    state_action_value = StateActionValue(nextStateValues, state, action, rewardFunc, transFunc,
+    state_action_value = state_action_value(nextStateValues, state, action, rewardFunc, transFunc,
                                           gamma)
     if best_state_action_value < state_action_value:
       best_action = action
@@ -28,7 +28,7 @@ def StateValue(nextStateValues, state, actions, rewardFunc, transFunc, gamma):
 
   return best_state_action_value
 
-def ValueIteration(values, actionFunc, rewardFunc, transFunc, gamma,
+def value_iteration(values, actionFunc, rewardFunc, transFunc, gamma,
                    outputName='state_values', outputFreq=10,
                    nextStateValues=None):
 
@@ -41,7 +41,7 @@ def ValueIteration(values, actionFunc, rewardFunc, transFunc, gamma,
     for state in values:
       # Get the allowable actions
       action_list = actionFunc(state)
-      new_state_value = StateValue(nextStateValues, state, action_list, rewardFunc,
+      new_state_value = state_value(nextStateValues, state, action_list, rewardFunc,
                                    transFunc, gamma)
       values[state] = new_state_value
       state_num += 1
@@ -58,20 +58,20 @@ def ValueIteration(values, actionFunc, rewardFunc, transFunc, gamma,
     break
     old_state_values = values
 
-def SolveForPolicy(states, nextStateValues, actionFunc, rewardFunc, transFunc, gamma, outputName):
+def solve_for_policy(states, nextStateValues, actionFunc, rewardFunc, transFunc, gamma, outputName):
 
   policy = {}
   for state in states:
     actions = actionFunc(state)
     best_action = actions[0]
-    best_state_action_value = StateActionValue(nextStateValues, state, best_action, rewardFunc,
+    best_state_action_value = state_action_value(nextStateValues, state, best_action, rewardFunc,
                                                transFunc, gamma)
     for action in actions[1:]:
-      state_action_value = StateActionValue(nextStateValues, state, action,
+      sa_val = state_action_value(nextStateValues, state, action,
                                             rewardFunc, transFunc, gamma)
-      if best_state_action_value < state_action_value:
+      if best_state_action_value < sa_val:
         best_action = action
-        best_state_action_value = state_action_value
+        best_state_action_value = sa_val
 
     policy[state] = best_action
   pickle.dump(policy, open('{}'.format(outputName), 'wt'))

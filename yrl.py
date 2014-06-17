@@ -13,7 +13,7 @@ play yahtzee
 
 # Returns a representation of n as a list of digits with base base and min
 # number of digits minLen
-def ToBits(n, minLen=0, base=2, offset=0):
+def to_bits(n, minLen=0, base=2, offset=0):
 
   bits = []
   while 0 < n or len(bits) < minLen:
@@ -24,13 +24,13 @@ def ToBits(n, minLen=0, base=2, offset=0):
 
 # Returns a map of all possible sorted dims-tuples with elements between min
 # and max and their probability of being drawn at random
-def EnumSortedPoss(min, max, dims):
+def enum_sorted_prob(min, max, dims):
 
   base = max - min + 1
   num_poss = (base)**dims
   sorted_count_map = {}
   for i in xrange(num_poss):
-    poss = tuple(sorted(ToBits(i, minLen=dims, base=base, offset=min)))
+    poss = tuple(sorted(to_bits(i, minLen=dims, base=base, offset=min)))
     if poss in sorted_count_map:
       sorted_count_map[poss] += 1
     else:
@@ -48,17 +48,17 @@ kRollsIndex = 14
 kDiceIndex = 15
 rolled_prob = [
   {},
-  EnumSortedPoss(1, 6, 1),
-  EnumSortedPoss(1, 6, 2),
-  EnumSortedPoss(1, 6, 3),
-  EnumSortedPoss(1, 6, 4),
-  EnumSortedPoss(1, 6, 5)
+  enum_sorted_prob(1, 6, 1),
+  enum_sorted_prob(1, 6, 2),
+  enum_sorted_prob(1, 6, 3),
+  enum_sorted_prob(1, 6, 4),
+  enum_sorted_prob(1, 6, 5)
 ]
 
 # Helper function for generating state-keys
-def StateTuple(i, y, r, d1, d2, d3, d4, d5):
+def state_tuple(i, y, r, d1, d2, d3, d4, d5):
 
-  i_bits = ToBits(i, 13)
+  i_bits = to_bits(i, 13)
   return (i_bits[0], i_bits[1], i_bits[2], i_bits[3], i_bits[4], i_bits[5], i_bits[6], 
           i_bits[7], i_bits[8], i_bits[9], i_bits[10], i_bits[11], i_bits[12], y, r, 
           d1, d2, d3, d4, d5)
@@ -66,13 +66,13 @@ def StateTuple(i, y, r, d1, d2, d3, d4, d5):
 # Returns a map of all state-values corresponding to having scored numScored
 # types already and used numRolls re-rolls this turn with their initial value
 # (0)
-def InitializeStateValues(numScored=None, numRolls=None):
+def init_state_values(numScored=None, numRolls=None):
 
   num = 0
   state_values = {}
   for i in xrange(2**13 - 1):
     # Every combination of score types
-    if numScored is not None and sum(ToBits(i, 13)) != numScored:
+    if numScored is not None and sum(to_bits(i, 13)) != numScored:
       continue
     for r in xrange(3):
       if numRolls is not None and numRolls != r:
@@ -85,10 +85,10 @@ def InitializeStateValues(numScored=None, numRolls=None):
               for d5 in xrange(d4, 7):
                 if num % 100000 == 0:
                   print num
-                state_values[StateTuple(i, 0, r, d1, d2, d3, d4, d5)] = 0
+                state_values[state_tuple(i, 0, r, d1, d2, d3, d4, d5)] = 0
                 num += 1
-                if ToBits(i, 13)[kYahtzeeUsedIndex] == 1:
-                  state_values[StateTuple(i, 1, r, d1, d2, d3, d4, d5)] = 0
+                if to_bits(i, 13)[kYahtzeeUsedIndex] == 1:
+                  state_values[state_tuple(i, 1, r, d1, d2, d3, d4, d5)] = 0
                   num += 1
 
   return state_values
@@ -98,7 +98,7 @@ def RollList():
 
   rolls = []
   for i in xrange(1, 2**5):
-    bits = ToBits(i, 5)
+    bits = to_bits(i, 5)
     roll = []
     for j in range(len(bits)):
       if bits[j] == 1:
@@ -179,12 +179,12 @@ def trans_func(state, action):
   return new_states
 
 # Generates optimal value functions for yahtzee
-def TrainCompPlayer():
+def train_comp_player():
 
   for num_scored in range(12, -1, -1):
     for num_rolls in range(2, -1, -1):
       print "Finding moves when we have scored {} boxes and re-rolled {} times".format(num_scored, num_rolls)
-      state_values = InitializeStateValues(numScored=num_scored, numRolls=num_rolls)
+      state_values = init_state_values(numScored=num_scored, numRolls=num_rolls)
       next_state_values = pickle.load(open('yahtzee_{}_0'.format(num_scored+1)))
       for i in range(num_rolls + 1, 3):
         next_state_values.update(pickle.load(open('yahtzee_{}_{}'.format(num_scored, i), 'rt')))
@@ -195,12 +195,12 @@ def TrainCompPlayer():
       del next_state_values
 
 # Generates optimal player policy from optimal value functions
-def TrainCompPlayerPolicy():
+def train_comp_player_policy():
 
   for num_scored in range(12, -1, -1):
     for num_rolls in range(2, -1, -1):
       print "Finding policy when we have scored {} boxes and re-rolled {} times".format(num_scored, num_rolls)
-      state_values = InitializeStateValues(numScored=num_scored, numRolls=num_rolls)
+      state_values = init_state_values(numScored=num_scored, numRolls=num_rolls)
       next_state_values = pickle.load(open('yahtzee_{}_0'.format(num_scored+1)))
       for i in range(num_rolls + 1, 3):
         next_state_values.update(pickle.load(open('yahtzee_{}_{}'.format(num_scored, i), 'rt')))
